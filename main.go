@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"html/template"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -44,7 +43,7 @@ func main() {
 	e.PUT("/books/:id", book.UpdateBook)
 	e.DELETE("/books/:id", book.DeleteBook)
 
-	e.POST("/upload", uploadImage)
+	e.POST("/upload", utils.UploadImage)
 	e.GET("/index", func(c echo.Context) error {
 		return c.Render(http.StatusOK, "hello", "World")
 	})
@@ -60,29 +59,4 @@ func main() {
 		port = "8080"
 	}
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%s", port)))
-}
-
-func uploadImage(c echo.Context) error {
-	file, err := c.FormFile("image")
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
-	}
-
-	src, err := file.Open()
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
-	}
-	defer src.Close()
-
-	dst, err := os.Create(fmt.Sprintf("./uploads/%s", file.Filename))
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
-	}
-	defer dst.Close()
-
-	if _, err = io.Copy(dst, src); err != nil {
-		return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
-	}
-
-	return c.JSON(http.StatusOK, utils.Response{Status: utils.Success})
 }
