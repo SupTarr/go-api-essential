@@ -29,6 +29,7 @@ func main() {
 		Templates: template.Must(template.ParseGlob("./templates/*.html")),
 	}
 	e.Renderer = t
+
 	e.GET("/ping", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{"message": "pong"})
 	})
