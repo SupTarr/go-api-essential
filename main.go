@@ -1,15 +1,23 @@
 package main
 
 import (
+	"log"
 	"net/http"
+	"os"
 
 	"github.com/SupTarr/go-api-essential/book"
 	"github.com/SupTarr/go-api-essential/utils"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	r := gin.Default()
 	r.LoadHTMLGlob("templates/*")
 	r.GET("/ping", func(c *gin.Context) {
@@ -41,7 +49,11 @@ func main() {
 		AllowHeaders: []string{"Origin", "Content-Type", "Accept"},
 	}))
 
-	r.Run()
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080" // Default port if not specified
+	}
+	r.Run(":" + port)
 }
 
 func uploadImage(c *gin.Context) {
