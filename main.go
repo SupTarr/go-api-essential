@@ -1,15 +1,18 @@
 package main
 
 import (
+	"fmt"
+	"html/template"
+	"io"
 	"log"
 	"net/http"
 	"os"
 
 	"github.com/SupTarr/go-api-essential/book"
 	"github.com/SupTarr/go-api-essential/utils"
-	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 func main() {
@@ -18,55 +21,67 @@ func main() {
 		log.Fatal(err)
 	}
 
-	r := gin.Default()
-	r.LoadHTMLGlob("templates/*")
-	r.GET("/ping", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "pong",
-		})
+	e := echo.New()
+	e.Use(middleware.CORS())
+	e.Use(middleware.Logger())
+	e.Use(middleware.Recover())
+	t := &utils.Template{
+		Templates: template.Must(template.ParseGlob("./templates/*.html")),
+	}
+	e.Renderer = t
+	e.GET("/ping", func(c echo.Context) error {
+		return c.JSON(http.StatusOK, map[string]string{"message": "pong"})
 	})
 
-	r.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, map[string]string{"status": "healthy"})
+	e.GET("/health", func(c echo.Context) error {
+		return c.JSON(http.StatusOK, map[string]string{"status": "healthy"})
 	})
 
-	r.GET("/books", book.GetBooks)
-	r.GET("/books/:id", book.GetBook)
-	r.POST("/books", book.CreateBook)
-	r.PUT("/books/:id", book.UpdateBook)
-	r.DELETE("/books/:id", book.DeleteBook)
+	e.GET("/books", book.GetBooks)
+	e.GET("/books/:id", book.GetBook)
+	e.POST("/books", book.CreateBook)
+	e.PUT("/books/:id", book.UpdateBook)
+	e.DELETE("/books/:id", book.DeleteBook)
 
-	r.POST("/upload", uploadImage)
-	r.GET("/index", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "index.tmpl", gin.H{
-			"title": "Main website",
-		})
+	e.POST("/upload", uploadImage)
+	e.GET("/index", func(c echo.Context) error {
+		return c.Render(http.StatusOK, "hello", "World")
 	})
 
-	r.Use(cors.New(cors.Config{
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins: []string{"*"},
-		AllowMethods: []string{"GET", "POST", "PUT", "DELETE"},
-		AllowHeaders: []string{"Origin", "Content-Type", "Accept"},
+		AllowMethods: []string{echo.GET, echo.POST, echo.PUT, echo.DELETE},
+		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept},
 	}))
 
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080" // Default port if not specified
+		port = "8080"
 	}
-	r.Run(":" + port)
+	e.Logger.Fatal(e.Start(fmt.Sprintf(":%s", port)))
 }
 
-func uploadImage(c *gin.Context) {
+func uploadImage(c echo.Context) error {
 	file, err := c.FormFile("image")
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
-		return
+		return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
 	}
 
-	err = c.SaveUploadedFile(file, "./uploads/"+file.Filename)
+	src, err := file.Open()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
+		return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
+	}
+	defer src.Close()
+
+	dst, err := os.Create(fmt.Sprintf("./uploads/%s", file.Filename))
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
+	}
+	defer dst.Close()
+
+	if _, err = io.Copy(dst, src); err != nil {
+		return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
 	}
 
-	c.JSON(http.StatusOK, utils.Response{Status: utils.Success})
+	return c.JSON(http.StatusOK, utils.Response{Status: utils.Success})
 }
