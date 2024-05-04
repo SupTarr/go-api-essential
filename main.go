@@ -11,6 +11,7 @@ import (
 
 func main() {
 	r := gin.Default()
+	r.LoadHTMLGlob("templates/*")
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"message": "pong",
@@ -28,6 +29,11 @@ func main() {
 	r.DELETE("/books/:id", book.DeleteBook)
 
 	r.POST("/upload", uploadImage)
+	r.GET("/index", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "index.tmpl", gin.H{
+			"title": "Main website",
+		})
+	})
 
 	r.Use(cors.New(cors.Config{
 		AllowOrigins: []string{"*"},
