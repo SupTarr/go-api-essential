@@ -1,0 +1,7 @@
+PUT http://localhost:8080/books/1
+Content-Type: application/json
+
+{
+    "title": "Don Quixote",
+    "author": "Miguel de Cervantes"
+} 
