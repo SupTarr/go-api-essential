@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/SupTarr/go-api-essential/utils"
-	"github.com/gin-gonic/gin"
+	"github.com/labstack/echo/v4"
 )
 
 var books []Book = []Book{
@@ -13,50 +13,45 @@ var books []Book = []Book{
 	{ID: 2, Title: "The Great Gatsby", Author: "F. Scott Fitzgerald"},
 }
 
-func GetBooks(c *gin.Context) {
-	c.JSON(http.StatusOK, utils.Response{Status: utils.Success, Data: books})
+func GetBooks(c echo.Context) error {
+	return c.JSON(http.StatusOK, utils.Response{Status: utils.Success, Data: books})
 }
 
-func GetBook(c *gin.Context) {
+func GetBook(c echo.Context) error {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
-		return
+		return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
 	}
 
 	for _, book := range books {
 		if book.ID == id {
-			c.JSON(http.StatusOK, utils.Response{Status: utils.Success, Data: book})
-			return
+			return c.JSON(http.StatusOK, utils.Response{Status: utils.Success, Data: book})
 		}
 	}
 
-	c.JSON(http.StatusOK, utils.Response{Status: utils.DataNotFound})
+	return c.JSON(http.StatusOK, utils.Response{Status: utils.DataNotFound})
 }
 
-func CreateBook(c *gin.Context) {
+func CreateBook(c echo.Context) error {
 	book := new(Book)
-	if err := c.ShouldBindJSON(&book); err != nil {
-		c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
-		return
+	if err := c.Bind(&book); err != nil {
+		return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
 	}
 
 	book.ID = len(books) + 1
 	books = append(books, *book)
-	c.JSON(http.StatusOK, utils.Response{Status: utils.Success, Data: book})
+	return c.JSON(http.StatusOK, utils.Response{Status: utils.Success, Data: book})
 }
 
-func UpdateBook(c *gin.Context) {
+func UpdateBook(c echo.Context) error {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
-		return
+		return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
 	}
 
 	bookUpdate := new(Book)
-	if err := c.ShouldBindJSON(&bookUpdate); err != nil {
-		c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
-		return
+	if err := c.Bind(&bookUpdate); err != nil {
+		return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
 	}
 
 	for i, book := range books {
@@ -64,28 +59,25 @@ func UpdateBook(c *gin.Context) {
 			book.Title = bookUpdate.Title
 			book.Author = bookUpdate.Author
 			books[i] = book
-			c.JSON(http.StatusOK, utils.Response{Status: utils.Success, Data: book})
-			return
+			return c.JSON(http.StatusOK, utils.Response{Status: utils.Success, Data: book})
 		}
 	}
 
-	c.JSON(http.StatusOK, utils.Response{Status: utils.DataNotFound})
+	return c.JSON(http.StatusOK, utils.Response{Status: utils.DataNotFound})
 }
 
-func DeleteBook(c *gin.Context) {
+func DeleteBook(c echo.Context) error {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
-		return
+		return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
 	}
 
 	for i, book := range books {
 		if book.ID == id {
 			books = append(books[:i], books[i+1:]...)
-			c.JSON(http.StatusOK, utils.Response{Status: utils.Success})
-			return
+			return c.JSON(http.StatusOK, utils.Response{Status: utils.Success})
 		}
 	}
 
-	c.JSON(http.StatusOK, utils.Response{Status: utils.DataNotFound})
+	return c.JSON(http.StatusOK, utils.Response{Status: utils.DataNotFound})
 }
