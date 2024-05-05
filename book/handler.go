@@ -13,6 +13,16 @@ var books []Book = []Book{
 	{ID: 2, Title: "The Great Gatsby", Author: "F. Scott Fitzgerald"},
 }
 
+// Handler functions
+// getBooks godoc
+// @Summary Get all books
+// @Description Get details of all books
+// @Tags books
+// @Accept  json
+// @Produce  json
+// @Security ApiKeyAuth
+// @Success 200 {array} Book
+// @Router /books [get]
 func GetBooks(c echo.Context) error {
 	return c.JSON(http.StatusOK, utils.Response{Status: utils.Success, Data: books})
 }
