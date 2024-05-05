@@ -59,9 +59,9 @@ func main() {
 	}
 
 	bookGroup := e.Group("/books")
-	bookGroup.Use(user.IsAdmin)
 	bookGroup.Use(echojwt.WithConfig(config))
 	bookGroup.Use(user.ExtractUserFromJWT)
+	bookGroup.Use(user.IsAdmin)
 	bookGroup.GET("/", book.GetBooks)
 	bookGroup.GET("/:id", book.GetBook)
 	bookGroup.POST("/", book.CreateBook)
