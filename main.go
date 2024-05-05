@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/SupTarr/go-api-essential/book"
+	_ "github.com/SupTarr/go-api-essential/docs"
 	"github.com/SupTarr/go-api-essential/user"
 	"github.com/SupTarr/go-api-essential/utils"
 	"github.com/golang-jwt/jwt/v5"
@@ -15,8 +16,18 @@ import (
 	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	echoSwagger "github.com/swaggo/echo-swagger"
 )
 
+// @title Book API
+// @description This is a sample server for a book API.
+// @version 1.0
+// @host localhost:8000
+// @BasePath /
+// @schemes http
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name Authorization
 func main() {
 	err := godotenv.Load()
 	if err != nil {
@@ -45,6 +56,8 @@ func main() {
 	e.GET("/index", func(c echo.Context) error {
 		return c.Render(http.StatusOK, "hello", "World")
 	})
+
+	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	secretKey := os.Getenv("SECRET_KEY")
 	if secretKey == "" {
