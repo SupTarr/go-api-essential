@@ -10,6 +10,7 @@ import (
 	"github.com/SupTarr/go-api-essential/book"
 	_ "github.com/SupTarr/go-api-essential/docs"
 	"github.com/SupTarr/go-api-essential/infrastructure"
+	"github.com/SupTarr/go-api-essential/product"
 	"github.com/SupTarr/go-api-essential/user"
 	"github.com/SupTarr/go-api-essential/utils"
 	"github.com/golang-jwt/jwt/v5"
@@ -63,6 +64,12 @@ func main() {
 	})
 
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
+
+	e.GET("/products", product.GetProductsHandler(db))
+	e.GET("/products/:id", product.GetProductHandler(db))
+	e.POST("/products", product.CreateProductsHandler(db))
+	e.PUT("/products/:id", product.UpdateProductsHandler(db))
+	e.DELETE("/products/:id", product.DeleteProductsHandler(db))
 
 	secretKey := os.Getenv("SECRET_KEY")
 	if secretKey == "" {

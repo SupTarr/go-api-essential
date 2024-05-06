@@ -1,59 +1,90 @@
 package product
 
-import "database/sql"
+import (
+	"database/sql"
+	"net/http"
+	"strconv"
 
-func GetProduct(db *sql.DB, id int) (Product, error) {
-	var p Product
-	row := db.QueryRow("SELECT id, name, price FROM products WHERE id=$1;", id)
-	err := row.Scan(&p.ID, &p.Name, &p.Price)
-	if err != nil {
-		return Product{}, err
-	}
+	"github.com/SupTarr/go-api-essential/utils"
+	"github.com/labstack/echo/v4"
+)
 
-	return p, nil
-}
-
-func GetProducts(db *sql.DB) ([]Product, error) {
-	rows, err := db.Query("SELECT id, name, price FROM products;")
-	if err != nil {
-		return nil, err
-	}
-
-	var products []Product
-	for rows.Next() {
-		var p Product
-		err := rows.Scan(&p.ID, &p.Name, &p.Price)
+func GetProductHandler(db *sql.DB) func(c echo.Context) error {
+	return func(c echo.Context) error {
+		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
-			return nil, err
+			return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
 		}
 
-		products = append(products, p)
-	}
+		product, err := GetProduct(db, id)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
+		}
 
-	if rows.Err() != nil {
-		return nil, err
+		return c.JSON(http.StatusOK, utils.Response{Status: utils.Success, Data: product})
 	}
-
-	return products, nil
 }
 
-func CreateProduct(db *sql.DB, product *Product) error {
-	_, err := db.Exec("INSERT INTO products(name, price) VALUES ($1, $2);", product.Name, product.Price)
-	return err
-}
+func GetProductsHandler(db *sql.DB) func(c echo.Context) error {
+	return func(c echo.Context) error {
+		products, err := GetProducts(db)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
+		}
 
-func UpdateProduct(db *sql.DB, id int, product *Product) (Product, error) {
-	var p Product
-	row := db.QueryRow("UPDATE products SET name=$1, price=$2 WHERE id=$3 RETURNING id, name, price;", product.Name, product.Price, id)
-	err := row.Scan(&p.ID, &p.Name, &p.Price)
-	if err != nil {
-		return Product{}, err
+		return c.JSON(http.StatusOK, utils.Response{Status: utils.Success, Data: products})
 	}
-
-	return p, nil
 }
 
-func DeleteProduct(db *sql.DB, id int) error {
-	_, err := db.Exec("DELETE FROM products WHERE id=$1;", id)
-	return err
+func CreateProductsHandler(db *sql.DB) func(c echo.Context) error {
+	return func(c echo.Context) error {
+		var p Product
+		if err := c.Bind(&p); err != nil {
+			return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
+		}
+
+		err := CreateProduct(db, &p)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
+		}
+
+		return c.JSON(http.StatusCreated, utils.Response{Status: utils.Success})
+	}
+}
+
+func UpdateProductsHandler(db *sql.DB) func(c echo.Context) error {
+	return func(c echo.Context) error {
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
+		}
+
+		var p Product
+		if err := c.Bind(&p); err != nil {
+			return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
+		}
+
+		product, err := UpdateProduct(db, id, &p)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
+		}
+
+		return c.JSON(http.StatusCreated, utils.Response{Status: utils.Success, Data: product})
+	}
+}
+
+func DeleteProductsHandler(db *sql.DB) func(c echo.Context) error {
+	return func(c echo.Context) error {
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
+		}
+
+		err = DeleteProduct(db, id)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
+		}
+
+		return c.JSON(http.StatusNoContent, utils.Response{Status: utils.Success})
+	}
 }
