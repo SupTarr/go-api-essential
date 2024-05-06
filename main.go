@@ -9,6 +9,7 @@ import (
 
 	"github.com/SupTarr/go-api-essential/book"
 	_ "github.com/SupTarr/go-api-essential/docs"
+	"github.com/SupTarr/go-api-essential/infrastructure"
 	"github.com/SupTarr/go-api-essential/user"
 	"github.com/SupTarr/go-api-essential/utils"
 	"github.com/golang-jwt/jwt/v5"
@@ -16,6 +17,7 @@ import (
 	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	_ "github.com/lib/pq"
 	echoSwagger "github.com/swaggo/echo-swagger"
 )
 
@@ -29,6 +31,8 @@ import (
 // @in header
 // @name Authorization
 func main() {
+	infrastructure.NewPostgres()
+
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal(err)
