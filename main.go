@@ -31,7 +31,8 @@ import (
 // @in header
 // @name Authorization
 func main() {
-	infrastructure.NewPostgres()
+	db := infrastructure.NewPostgres()
+	defer db.Close()
 
 	err := godotenv.Load()
 	if err != nil {
