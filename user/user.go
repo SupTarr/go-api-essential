@@ -1,6 +1,7 @@
 package user
 
 import (
+	"github.com/SupTarr/go-api-essential/utils"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -9,21 +10,19 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
-var user = struct {
-	Email    string
+type User struct {
+	utils.BaseModel
+	Email    string `gorm:"unique"`
 	Password string
-}{
-	Email:    "user@example.com",
-	Password: "password123",
 }
 
 type JwtCustomClaims struct {
+	ID    uint   `json:"id"`
 	Email string `json:"email"`
-	Role  string `json:"role"`
 	jwt.RegisteredClaims
 }
 
 type UserData struct {
+	ID    uint
 	Email string
-	Role  string
 }
