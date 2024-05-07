@@ -36,7 +36,7 @@ func GetProductsHandler(db *sql.DB) func(c echo.Context) error {
 	}
 }
 
-func CreateProductsHandler(db *sql.DB) func(c echo.Context) error {
+func CreateProductHandler(db *sql.DB) func(c echo.Context) error {
 	return func(c echo.Context) error {
 		var p Product
 		if err := c.Bind(&p); err != nil {
@@ -52,7 +52,7 @@ func CreateProductsHandler(db *sql.DB) func(c echo.Context) error {
 	}
 }
 
-func UpdateProductsHandler(db *sql.DB) func(c echo.Context) error {
+func UpdateProductHandler(db *sql.DB) func(c echo.Context) error {
 	return func(c echo.Context) error {
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
@@ -73,7 +73,7 @@ func UpdateProductsHandler(db *sql.DB) func(c echo.Context) error {
 	}
 }
 
-func DeleteProductsHandler(db *sql.DB) func(c echo.Context) error {
+func DeleteProductHandler(db *sql.DB) func(c echo.Context) error {
 	return func(c echo.Context) error {
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
