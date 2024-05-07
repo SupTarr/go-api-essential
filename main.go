@@ -37,7 +37,7 @@ func main() {
 	defer db.Close()
 
 	dbGorm := infrastructure.NewPostgresGorm()
-	dbGorm.AutoMigrate(&books.Book{})
+	dbGorm.AutoMigrate(&books.Book{}, &user.User{})
 
 	err := godotenv.Load()
 	if err != nil {
@@ -61,7 +61,8 @@ func main() {
 		return c.JSON(http.StatusOK, map[string]string{"status": "healthy"})
 	})
 
-	e.POST("/login", user.Login())
+	e.POST("/register", user.Register(dbGorm))
+	e.POST("/login", user.Login(dbGorm))
 	e.POST("/upload", utils.UploadImage)
 	e.GET("/index", func(c echo.Context) error {
 		return c.Render(http.StatusOK, "hello", "World")
@@ -97,7 +98,6 @@ func main() {
 	bookGroup := e.Group("/books")
 	bookGroup.Use(echojwt.WithConfig(config))
 	bookGroup.Use(user.ExtractUserFromJWT)
-	bookGroup.Use(user.IsAdmin)
 	bookGroup.GET("/", book.GetBooks)
 	bookGroup.GET("/:id", book.GetBook)
 	bookGroup.POST("/", book.CreateBook)
