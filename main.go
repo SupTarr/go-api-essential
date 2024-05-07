@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/SupTarr/go-api-essential/book"
+	"github.com/SupTarr/go-api-essential/books"
 	_ "github.com/SupTarr/go-api-essential/docs"
 	"github.com/SupTarr/go-api-essential/infrastructure"
 	"github.com/SupTarr/go-api-essential/product"
@@ -34,6 +35,9 @@ import (
 func main() {
 	db := infrastructure.NewPostgres()
 	defer db.Close()
+
+	dbGorm := infrastructure.NewPostgresGorm()
+	dbGorm.AutoMigrate(&books.Book{})
 
 	err := godotenv.Load()
 	if err != nil {
@@ -67,9 +71,16 @@ func main() {
 
 	e.GET("/products", product.GetProductsHandler(db))
 	e.GET("/products/:id", product.GetProductHandler(db))
-	e.POST("/products", product.CreateProductsHandler(db))
-	e.PUT("/products/:id", product.UpdateProductsHandler(db))
-	e.DELETE("/products/:id", product.DeleteProductsHandler(db))
+	e.POST("/products", product.CreateProductHandler(db))
+	e.PUT("/products/:id", product.UpdateProductHandler(db))
+	e.DELETE("/products/:id", product.DeleteProductHandler(db))
+
+	bookV2Group := e.Group("/v2/books")
+	bookV2Group.GET("", books.GetBooksHandler(dbGorm))
+	bookV2Group.GET("/:id", books.GetBookHandler(dbGorm))
+	bookV2Group.POST("", books.CreateBookHandler(dbGorm))
+	bookV2Group.PUT("/:id", books.UpdateBookHandler(dbGorm))
+	bookV2Group.DELETE("/:id", books.DeleteBookHandler(dbGorm))
 
 	secretKey := os.Getenv("SECRET_KEY")
 	if secretKey == "" {
