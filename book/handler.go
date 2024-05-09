@@ -6,88 +6,85 @@ import (
 
 	"github.com/SupTarr/go-api-essential/utils"
 	"github.com/labstack/echo/v4"
+	"gorm.io/gorm"
 )
 
-var books []Book = []Book{
-	{ID: 1, Title: "1984", Author: "George Orwell"},
-	{ID: 2, Title: "The Great Gatsby", Author: "F. Scott Fitzgerald"},
-}
-
-// Handler functions
-// getBooks godoc
-// @Summary Get all books
-// @Description Get details of all books
-// @Tags books
-// @Accept  json
-// @Produce  json
-// @Security ApiKeyAuth
-// @Success 200 {array} Book
-// @Router /books [get]
-func GetBooks(c echo.Context) error {
-	return c.JSON(http.StatusOK, utils.Response{Status: utils.Success, Data: books})
-}
-
-func GetBook(c echo.Context) error {
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
-	}
-
-	for _, book := range books {
-		if book.ID == id {
-			return c.JSON(http.StatusOK, utils.Response{Status: utils.Success, Data: book})
+func GetBookHandler(db *gorm.DB) func(c echo.Context) error {
+	return func(c echo.Context) error {
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
 		}
-	}
 
-	return c.JSON(http.StatusOK, utils.Response{Status: utils.DataNotFound})
-}
-
-func CreateBook(c echo.Context) error {
-	book := new(Book)
-	if err := c.Bind(&book); err != nil {
-		return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
-	}
-
-	book.ID = len(books) + 1
-	books = append(books, *book)
-	return c.JSON(http.StatusOK, utils.Response{Status: utils.Success, Data: book})
-}
-
-func UpdateBook(c echo.Context) error {
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
-	}
-
-	bookUpdate := new(Book)
-	if err := c.Bind(&bookUpdate); err != nil {
-		return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
-	}
-
-	for i, book := range books {
-		if book.ID == id {
-			book.Title = bookUpdate.Title
-			book.Author = bookUpdate.Author
-			books[i] = book
-			return c.JSON(http.StatusOK, utils.Response{Status: utils.Success, Data: book})
+		book, err := GetBook(db, id)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
 		}
-	}
 
-	return c.JSON(http.StatusOK, utils.Response{Status: utils.DataNotFound})
+		return c.JSON(http.StatusOK, utils.Response{Status: utils.Success, Data: book})
+	}
 }
 
-func DeleteBook(c echo.Context) error {
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
-	}
-
-	for i, book := range books {
-		if book.ID == id {
-			books = append(books[:i], books[i+1:]...)
-			return c.JSON(http.StatusOK, utils.Response{Status: utils.Success})
+func GetBooksHandler(db *gorm.DB) func(c echo.Context) error {
+	return func(c echo.Context) error {
+		books, err := GetBooks(db)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
 		}
-	}
 
-	return c.JSON(http.StatusOK, utils.Response{Status: utils.DataNotFound})
+		return c.JSON(http.StatusOK, utils.Response{Status: utils.Success, Data: books})
+	}
+}
+
+func CreateBookHandler(db *gorm.DB) func(c echo.Context) error {
+	return func(c echo.Context) error {
+		var b Book
+		if err := c.Bind(&b); err != nil {
+			return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
+		}
+
+		err := CreateBook(db, &b)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
+		}
+
+		return c.JSON(http.StatusCreated, utils.Response{Status: utils.Success})
+	}
+}
+
+func UpdateBookHandler(db *gorm.DB) func(c echo.Context) error {
+	return func(c echo.Context) error {
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
+		}
+
+		b, err := GetBook(db, id)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
+		}
+
+		if err := c.Bind(&b); err != nil {
+			return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
+		}
+
+		UpdateBook(db, b)
+		return c.JSON(http.StatusCreated, utils.Response{Status: utils.Success, Data: b})
+	}
+}
+
+func DeleteBookHandler(db *gorm.DB) func(c echo.Context) error {
+	return func(c echo.Context) error {
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
+		}
+
+		err = DeleteBook(db, id)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
+		}
+
+		return c.JSON(http.StatusNoContent, utils.Response{Status: utils.Success})
+	}
 }
