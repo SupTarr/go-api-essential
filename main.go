@@ -8,7 +8,6 @@ import (
 	"os"
 
 	"github.com/SupTarr/go-api-essential/book"
-	"github.com/SupTarr/go-api-essential/books"
 	_ "github.com/SupTarr/go-api-essential/docs"
 	"github.com/SupTarr/go-api-essential/infrastructure"
 	"github.com/SupTarr/go-api-essential/product"
@@ -37,7 +36,7 @@ func main() {
 	defer db.Close()
 
 	dbGorm := infrastructure.NewPostgresGorm()
-	dbGorm.AutoMigrate(&books.Book{}, &user.User{})
+	dbGorm.AutoMigrate(&book.Book{}, &user.User{})
 
 	err := godotenv.Load()
 	if err != nil {
@@ -76,13 +75,6 @@ func main() {
 	e.PUT("/products/:id", product.UpdateProductHandler(db))
 	e.DELETE("/products/:id", product.DeleteProductHandler(db))
 
-	bookV2Group := e.Group("/v2/books")
-	bookV2Group.GET("", books.GetBooksHandler(dbGorm))
-	bookV2Group.GET("/:id", books.GetBookHandler(dbGorm))
-	bookV2Group.POST("", books.CreateBookHandler(dbGorm))
-	bookV2Group.PUT("/:id", books.UpdateBookHandler(dbGorm))
-	bookV2Group.DELETE("/:id", books.DeleteBookHandler(dbGorm))
-
 	secretKey := os.Getenv("SECRET_KEY")
 	if secretKey == "" {
 		log.Fatal("SECRET_KEY is not set")
@@ -98,11 +90,11 @@ func main() {
 	bookGroup := e.Group("/books")
 	bookGroup.Use(echojwt.WithConfig(config))
 	bookGroup.Use(user.ExtractUserFromJWT)
-	bookGroup.GET("/", book.GetBooks)
-	bookGroup.GET("/:id", book.GetBook)
-	bookGroup.POST("/", book.CreateBook)
-	bookGroup.PUT("/:id", book.UpdateBook)
-	bookGroup.DELETE("/:id", book.DeleteBook)
+	bookGroup.GET("/", book.GetBooksHandler(dbGorm))
+	bookGroup.GET("/:id", book.GetBookHandler(dbGorm))
+	bookGroup.POST("/", book.CreateBookHandler(dbGorm))
+	bookGroup.PUT("/:id", book.UpdateBookHandler(dbGorm))
+	bookGroup.DELETE("/:id", book.DeleteBookHandler(dbGorm))
 
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins: []string{"*"},
