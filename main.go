@@ -84,7 +84,7 @@ func main() {
 		NewClaimsFunc: func(c echo.Context) jwt.Claims {
 			return new(user.JwtCustomClaims)
 		},
-		TokenLookup: "cookie:jwt",
+		TokenLookup: "header:Authorization:Bearer ,cookie:jwt",
 		SigningKey:  []byte(secretKey),
 	}
 
