@@ -54,7 +54,8 @@ func Login(db *gorm.DB) echo.HandlerFunc {
 			user.ID,
 			user.Email,
 			jwt.RegisteredClaims{
-				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 72)),
+				IssuedAt:  jwt.NewNumericDate(time.Now()),
+				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 3)),
 			},
 		}
 
@@ -65,9 +66,10 @@ func Login(db *gorm.DB) echo.HandlerFunc {
 		}
 
 		cookie := &http.Cookie{
-			Name:    "JWT",
-			Value:   t,
-			Expires: time.Now().Add(3 * time.Hour),
+			Name:     "jwt",
+			Value:    t,
+			Expires:  time.Now().Add(3 * time.Hour),
+			HttpOnly: true,
 		}
 
 		c.SetCookie(cookie)
@@ -75,18 +77,26 @@ func Login(db *gorm.DB) echo.HandlerFunc {
 	}
 }
 
-func ExtractUserFromJWT(next echo.HandlerFunc) echo.HandlerFunc {
+func AuthRequired(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		user := &UserData{}
+		cookie, err := c.Cookie("jwt")
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
+		}
 
-		token := c.Get("user").(*jwt.Token)
-		claims := token.Claims.(*JwtCustomClaims)
+		secretKey := os.Getenv("SECRET_KEY")
+		if secretKey == "" {
+			log.Fatal("SECRET_KEY is not set")
+		}
 
-		user.ID = claims.ID
-		user.Email = claims.Email
-		log.Printf("User id = %d, name = %s", user.ID, user.Email)
+		token, err := jwt.ParseWithClaims(cookie.Value, &JwtCustomClaims{}, func(token *jwt.Token) (interface{}, error) {
+			return []byte(secretKey), nil
+		})
 
-		c.Set("user", user)
+		if err != nil || !token.Valid {
+			return c.JSON(http.StatusInternalServerError, utils.Response{Status: utils.Fail, Message: err.Error()})
+		}
+
 		return next(c)
 	}
 }

@@ -84,12 +84,13 @@ func main() {
 		NewClaimsFunc: func(c echo.Context) jwt.Claims {
 			return new(user.JwtCustomClaims)
 		},
-		SigningKey: []byte(secretKey),
+		TokenLookup: "cookie:jwt",
+		SigningKey:  []byte(secretKey),
 	}
 
 	bookGroup := e.Group("/books")
 	bookGroup.Use(echojwt.WithConfig(config))
-	bookGroup.Use(user.ExtractUserFromJWT)
+	bookGroup.Use(user.AuthRequired)
 	bookGroup.GET("/", book.GetBooksHandler(dbGorm))
 	bookGroup.GET("/:id", book.GetBookHandler(dbGorm))
 	bookGroup.POST("/", book.CreateBookHandler(dbGorm))
