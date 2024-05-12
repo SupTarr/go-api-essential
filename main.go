@@ -11,6 +11,7 @@ import (
 	_ "github.com/SupTarr/go-api-essential/docs"
 	"github.com/SupTarr/go-api-essential/infrastructure"
 	"github.com/SupTarr/go-api-essential/product"
+	"github.com/SupTarr/go-api-essential/pubsub"
 	"github.com/SupTarr/go-api-essential/user"
 	"github.com/SupTarr/go-api-essential/utils"
 	"github.com/golang-jwt/jwt/v5"
@@ -74,6 +75,15 @@ func main() {
 	e.POST("/products", product.CreateProductHandler(db))
 	e.PUT("/products/:id", product.UpdateProductHandler(db))
 	e.DELETE("/products/:id", product.DeleteProductHandler(db))
+
+	ps := &pubsub.PubSub{}
+	e.POST("/publisher", pubsub.PublishHandler(ps))
+	sub := ps.Subscribe()
+	go func() {
+		for msg := range sub {
+			log.Println(">> Recieve message:", msg)
+		}
+	}()
 
 	secretKey := os.Getenv("SECRET_KEY")
 	if secretKey == "" {
